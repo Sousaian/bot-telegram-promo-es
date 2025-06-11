@@ -1,18 +1,14 @@
 import { Telegraf } from 'telegraf';
-import dotenv from 'dotenv';
-dotenv.config();
+import { TELEGRAM_TOKEN } from './config/config';
 
-const bot = new Telegraf(process.env.BOT_TOKEN!);
+const bot = new Telegraf(TELEGRAM_TOKEN);
 
-// Example command handler
+// Handlers
 bot.start((ctx) => ctx.reply('Welcome! I am your Amazon affiliate bot 🚀'));
+bot.on('text', (ctx) => ctx.reply(`You said: ${ctx.message.text}`));
 
-// Example text handler
-bot.on('text', (ctx) => {
-  ctx.reply(`You said: ${ctx.message.text}`);
-});
-
-// Launch the bot
+// Start
 bot.launch();
-
 console.log('🤖 Bot is running...');
+
+export default bot;
