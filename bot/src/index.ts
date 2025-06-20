@@ -1,16 +1,18 @@
-import { Telegraf } from 'telegraf';
-import dotenv from 'dotenv';
-import { TELEGRAM_TOKEN } from './config/config';
+import { bot } from './bot/instance';
+import { checkAndSendPromos } from './bot/schedule';
 import { startServer } from './api/server';
 
+import dotenv from 'dotenv';
 dotenv.config();
 
-const bot = new Telegraf(TELEGRAM_TOKEN);
-
-bot.start((ctx) => ctx.reply('Bot iniciado com sucesso!'));
-
 bot.launch();
-console.log('🤖 Bot rodando...');
+console.log('🤖 Bot is running...');
+console.log('⏱️ Agendando verificação de promoções a cada 5 minutos...');
 
-// Inicia servidor HTTP para receber promoções
+setInterval(checkAndSendPromos, 5 * 60 * 1000);
+
 startServer();
+
+process.on('uncaughtException', (err) => {
+  console.error('Erro inesperado:', err);
+});
