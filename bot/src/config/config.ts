@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config(); // força o carregamento aqui também
+
 function getEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing environment variable: ${name}`);
@@ -6,5 +9,6 @@ function getEnv(name: string): string {
 
 export const TELEGRAM_TOKEN = getEnv("TELEGRAM_TOKEN");
 export const GROUP_ID = getEnv("GROUP_ID");
-export const OPENAI_KEY = getEnv("OPENAI_KEY");
-export const AFFILIATE_TAG = getEnv("AFFILIATE_TAG");
+
+// export const OPENAI_KEY = getEnv("OPENAI_KEY");
+// export const AFFILIATE_TAG = getEnv("AFFILIATE_TAG");
