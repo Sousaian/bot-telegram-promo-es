@@ -20,6 +20,8 @@ export async function checkAndSendPromos() {
 
     const promos = response.data;
 
+    console.log(`Encontradas ${promos.length} promoções.`);
+
     for (const promo of promos) {
       await sendPromoToGroup(promo);
     }

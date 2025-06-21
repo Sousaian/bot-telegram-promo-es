@@ -4,8 +4,8 @@ import { PromoData } from './types';
 
 export async function sendPromoToGroup(data: PromoData) {
   const { nome, preco, categoria, url, imagem } = data;
-
-  const msg = `🔥 *Promoção encontrada!*\n\n🛍️ *${nome}*\n💰 *R$${preco.toFixed(2)}*\n📦 Categoria: _${categoria}_\n\n🔗 [Compre aqui](${url})`;
+  
+    const msg = `🔥 *Promoção encontrada!*\n\n🛍️ *${nome}*\n💰 *R$${preco.toFixed(2)}*\n📦 Categoria: _${categoria}_\n\n🔗 [Compre aqui](${url})`;
 
   try {
     if (imagem) {

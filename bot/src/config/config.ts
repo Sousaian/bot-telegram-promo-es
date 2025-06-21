@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config(); // força o carregamento aqui também
+dotenv.config(); 
 
 function getEnv(name: string): string {
   const value = process.env[name];

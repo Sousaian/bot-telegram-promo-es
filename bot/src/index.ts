@@ -9,7 +9,7 @@ bot.launch();
 console.log('🤖 Bot is running...');
 console.log('⏱️ Agendando verificação de promoções a cada 5 minutos...');
 
-setInterval(checkAndSendPromos, 5 * 60 * 1000);
+setInterval(checkAndSendPromos, 1 * 60 * 1000);
 
 startServer();
 
