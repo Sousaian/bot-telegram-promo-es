@@ -19,8 +19,11 @@
   "author": "Ian Alves Sousa",
   "license": "UNLICENSED",
   "dependencies": {
+    "croner": "^10.0.1",
     "express": "^5.1.0",
-    "telegraf": "^4.16.3"
+    "node-html-parser": "^9.0.5",
+    "telegraf": "^4.16.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
