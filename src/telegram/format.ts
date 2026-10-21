@@ -11,14 +11,24 @@ export function formatPrice(value: number): string {
   return priceFormatter.format(value).replace(/\u00a0/g, " ");
 }
 
-/** Monta a mensagem da promoção em HTML (parse_mode: "HTML"). */
+const truncate = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+
+/** Monta a mensagem da promoção em HTML (parse_mode: "HTML"). Cabe no limite de legenda (1024). */
 export function formatPromoMessage(promo: Promo): string {
+  const headline = promo.chamada ? escapeHtml(truncate(promo.chamada, 80)) : "Promoção encontrada!";
+
+  let priceLine = `💰 <b>${formatPrice(promo.preco)}</b>`;
+  if (promo.precoOriginal && promo.precoOriginal > promo.preco) {
+    const pct = Math.round((1 - promo.preco / promo.precoOriginal) * 100);
+    priceLine = `💰 De <s>${formatPrice(promo.precoOriginal)}</s> por <b>${formatPrice(promo.preco)}</b> (-${pct}%)`;
+  }
+
   return [
-    "🔥 <b>Promoção encontrada!</b>",
+    `🔥 <b>${headline}</b>`,
     "",
-    `🛍️ <b>${escapeHtml(promo.nome)}</b>`,
-    `💰 <b>${formatPrice(promo.preco)}</b>`,
-    `📦 Categoria: <i>${escapeHtml(promo.categoria)}</i>`,
+    `🛍️ <b>${escapeHtml(truncate(promo.nome, 200))}</b>`,
+    priceLine,
+    promo.loja ? `🏪 Loja: <i>${escapeHtml(promo.loja)}</i>` : `📦 Categoria: <i>${escapeHtml(promo.categoria)}</i>`,
     "",
     `🔗 <a href="${escapeHtml(promo.url)}">Compre aqui</a>`,
   ].join("\n");

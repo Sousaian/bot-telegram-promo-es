@@ -5,6 +5,12 @@ export interface Promo {
   categoria: string;
   url: string;
   imagem?: string;
+  /** Preço "de" (riscado). */
+  precoOriginal?: number;
+  /** Chamada curta exibida no topo (gerada pelo agente). */
+  chamada?: string;
+  /** Nome da loja (ex.: Amazon). */
+  loja?: string;
 }
 
 export type ParseResult =
@@ -19,6 +25,8 @@ const isHttpUrl = (v: string): boolean => {
   return protocol === "http:" || protocol === "https:";
 };
 
+const toNumber = (v: unknown): unknown => (typeof v === "string" && v.trim() !== "" ? Number(v) : v);
+
 /** Valida um objeto desconhecido (JSON) e o converte em Promo. */
 export function parsePromo(input: unknown): ParseResult {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
@@ -30,7 +38,7 @@ export function parsePromo(input: unknown): ParseResult {
   if (!isNonEmptyString(data.nome)) errors.push("nome é obrigatório");
   if (!isNonEmptyString(data.categoria)) errors.push("categoria é obrigatória");
 
-  const preco = typeof data.preco === "string" ? Number(data.preco) : data.preco;
+  const preco = toNumber(data.preco);
   if (typeof preco !== "number" || !Number.isFinite(preco) || preco < 0) {
     errors.push("preco deve ser um número >= 0");
   }
@@ -45,6 +53,13 @@ export function parsePromo(input: unknown): ParseResult {
     }
   }
 
+  const precoOriginal = toNumber(data.precoOriginal);
+  if (precoOriginal !== undefined && precoOriginal !== null && precoOriginal !== "") {
+    if (typeof precoOriginal !== "number" || !Number.isFinite(precoOriginal) || precoOriginal < 0) {
+      errors.push("precoOriginal, se informado, deve ser um número >= 0");
+    }
+  }
+
   if (errors.length > 0) return { ok: false, errors };
 
   const promo: Promo = {
@@ -54,6 +69,9 @@ export function parsePromo(input: unknown): ParseResult {
     url: (data.url as string).trim(),
   };
   if (isNonEmptyString(data.imagem)) promo.imagem = data.imagem.trim();
+  if (typeof precoOriginal === "number" && precoOriginal > promo.preco) promo.precoOriginal = precoOriginal;
+  if (isNonEmptyString(data.chamada)) promo.chamada = data.chamada.trim();
+  if (isNonEmptyString(data.loja)) promo.loja = data.loja.trim();
   return { ok: true, promo };
 }
 

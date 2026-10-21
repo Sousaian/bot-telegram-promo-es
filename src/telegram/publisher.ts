@@ -2,9 +2,14 @@ import type { Telegram } from "telegraf";
 import type { Promo } from "../domain/promo.js";
 import { formatPromoMessage } from "./format.js";
 
+export interface PublishOptions {
+  /** Sobrescreve o chat padrão (GROUP_ID). */
+  chatId?: string | undefined;
+}
+
 /** Contrato mínimo usado para publicar; facilita testes sem a API real. */
 export interface PromoPublisher {
-  publish(promo: Promo): Promise<void>;
+  publish(promo: Promo, options?: PublishOptions): Promise<void>;
 }
 
 type TelegramSender = Pick<Telegram, "sendMessage" | "sendPhoto">;
@@ -15,17 +20,19 @@ export class TelegramPromoPublisher implements PromoPublisher {
     private readonly chatId: string,
   ) {}
 
-  /** Publica a promoção. Lança erro se o Telegram recusar o envio. */
-  async publish(promo: Promo): Promise<void> {
+  /** Publica a promoção. Se a foto falhar, tenta como texto. Lança erro se o Telegram recusar. */
+  async publish(promo: Promo, options: PublishOptions = {}): Promise<void> {
+    const chatId = options.chatId ?? this.chatId;
     const text = formatPromoMessage(promo);
 
     if (promo.imagem) {
-      await this.telegram.sendPhoto(this.chatId, promo.imagem, { caption: text, parse_mode: "HTML" });
-      return;
+      try {
+        await this.telegram.sendPhoto(chatId, promo.imagem, { caption: text, parse_mode: "HTML" });
+        return;
+      } catch (err) {
+        console.warn("[publisher] falha ao enviar foto, tentando só texto:", (err as Error).message);
+      }
     }
-    await this.telegram.sendMessage(this.chatId, text, {
-      parse_mode: "HTML",
-      link_preview_options: { is_disabled: false },
-    });
+    await this.telegram.sendMessage(chatId, text, { parse_mode: "HTML" });
   }
 }
