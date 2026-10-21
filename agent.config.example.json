@@ -1,0 +1,42 @@
+{
+  "timezone": "America/Sao_Paulo",
+  "llm": {
+    "provider": "openrouter",
+    "model": "anthropic/claude-haiku-5.5"
+  },
+  "affiliates": {
+    "amazon": { "tag": "seutag-20" },
+    "mercadolivre": { "params": { "matt_tool": "SEU_ID" } },
+    "shopee": {}
+  },
+  "repostAfterDays": 7,
+  "delayBetweenPostsSeconds": 3,
+  "jobs": [
+    {
+      "name": "eletronicos-hora-em-hora",
+      "schedule": "0 * * * *",
+      "sources": ["amazon", "shopee"],
+      "keywords": ["fone bluetooth", "smartwatch", "ssd 1tb"],
+      "minDiscount": 20,
+      "maxPosts": 3,
+      "instructions": "Priorize marcas conhecidas e descontos relevantes. Evite acessórios e produtos muito parecidos."
+    },
+    {
+      "name": "casa-manha",
+      "schedule": "0 9 * * *",
+      "sources": ["amazon", "shopee"],
+      "keywords": ["cafeteira", "aspirador de pó"],
+      "minDiscount": 15,
+      "maxPosts": 2
+    },
+    {
+      "name": "games-fds",
+      "schedule": "0 10,16 * * 6,0",
+      "sources": ["amazon"],
+      "keywords": ["controle gamer", "headset gamer"],
+      "minDiscount": 20,
+      "maxPosts": 3,
+      "enabled": false
+    }
+  ]
+}

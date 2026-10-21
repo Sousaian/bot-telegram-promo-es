@@ -6,13 +6,18 @@ import type { JobConfig } from "./config.js";
 import type { Curator, Pick } from "./curator.js";
 import { discountPercent, offerKey, offerSentKey, SOURCE_LABEL, type Offer, type OfferSource, type SourceId } from "./types.js";
 
+/** Escolha publicada (ou selecionada, em simulação) com o link de afiliado usado. */
+export interface PublishedPick extends Pick {
+  affiliateUrl: string;
+}
+
 export interface JobReport {
   job: string;
   startedAt: Date;
   durationMs: number;
   found: number;
   candidates: number;
-  published: Pick[];
+  published: PublishedPick[];
   failed: number;
   errors: string[];
   dryRun: boolean;
@@ -107,20 +112,20 @@ export class PromoAgent {
     const curator = job.useLlm && this.deps.curators.llm ? this.deps.curators.llm : this.deps.curators.heuristic;
     const picks = await curator.curate({ candidates, maxPosts: job.maxPosts, instructions: job.instructions });
 
-    const published: Pick[] = [];
+    const published: PublishedPick[] = [];
     let failed = 0;
     for (const pick of picks) {
       const affiliateUrl = buildAffiliateUrl(pick.offer, this.deps.affiliates);
       if (!affiliateUrl) continue;
       if (dryRun) {
-        published.push(pick);
+        published.push({ ...pick, affiliateUrl });
         continue;
       }
       if (published.length > 0 && this.deps.delayBetweenPostsMs) await this.sleep(this.deps.delayBetweenPostsMs);
       try {
         await this.deps.publisher.publish(offerToPromo(pick, affiliateUrl), { chatId: job.chatId });
         this.deps.sent.add(offerSentKey(pick.offer));
-        published.push(pick);
+        published.push({ ...pick, affiliateUrl });
       } catch (err) {
         failed++;
         errors.push(`publicar "${pick.offer.title.slice(0, 40)}": ${(err as Error).message}`);

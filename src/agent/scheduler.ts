@@ -2,7 +2,12 @@ import { Cron } from "croner";
 import type { JobReport } from "./agent.js";
 import type { JobConfig } from "./config.js";
 
-export type JobRunner = (job: JobConfig) => Promise<JobReport>;
+export interface RunOptions {
+  /** Simula: escolhe as ofertas mas não publica nem marca como enviadas. */
+  dryRun?: boolean | undefined;
+}
+
+export type JobRunner = (job: JobConfig, options: RunOptions) => Promise<JobReport>;
 
 export interface ScheduledJobInfo {
   name: string;
@@ -14,8 +19,34 @@ export interface ScheduledJobInfo {
   lastReport?: JobReport | undefined;
 }
 
+/** Contrato usado pelo bot e pela API HTTP (evita acoplar com o JobScheduler). */
+export interface JobsController {
+  readonly timezone: string;
+  list(): ScheduledJobInfo[];
+  run(name: string, options?: RunOptions): Promise<JobReport>;
+}
+
+export class JobNotFoundError extends Error {
+  constructor(name: string) {
+    super(`job "${name}" não existe`);
+    this.name = "JobNotFoundError";
+  }
+}
+
+export class JobAlreadyRunningError extends Error {
+  constructor(name: string) {
+    super(`job "${name}" já está em execução`);
+    this.name = "JobAlreadyRunningError";
+  }
+}
+
+/** Formata uma data no fuso do config (ex.: 21/10/2026, 18:00). */
+export function formatDateTime(date: Date, timezone: string): string {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: timezone, dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
 /** Agenda os jobs via cron. Um job nunca roda em paralelo com ele mesmo. */
-export class JobScheduler {
+export class JobScheduler implements JobsController {
   private readonly crons = new Map<string, Cron>();
   private readonly running = new Set<string>();
   private readonly lastReports = new Map<string, JobReport>();
@@ -23,7 +54,7 @@ export class JobScheduler {
   constructor(
     private readonly jobs: JobConfig[],
     private readonly runner: JobRunner,
-    private readonly timezone: string,
+    readonly timezone: string,
     private readonly onReport: (r: JobReport) => void = () => {},
   ) {}
 
@@ -46,14 +77,14 @@ export class JobScheduler {
     return this.jobs.find((j) => j.name === name);
   }
 
-  /** Executa um job agora. Lança erro se ele já estiver rodando. */
-  async run(name: string): Promise<JobReport> {
+  /** Executa um job agora. Lança JobNotFoundError / JobAlreadyRunningError. */
+  async run(name: string, options: RunOptions = {}): Promise<JobReport> {
     const job = this.getJob(name);
-    if (!job) throw new Error(`job "${name}" não existe`);
-    if (this.running.has(name)) throw new Error(`job "${name}" já está em execução`);
+    if (!job) throw new JobNotFoundError(name);
+    if (this.running.has(name)) throw new JobAlreadyRunningError(name);
     this.running.add(name);
     try {
-      const report = await this.runner(job);
+      const report = await this.runner(job, { dryRun: options.dryRun ?? false });
       this.lastReports.set(name, report);
       this.onReport(report);
       return report;

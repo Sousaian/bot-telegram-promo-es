@@ -1,5 +1,6 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { timingSafeEqual } from "node:crypto";
+import { JobAlreadyRunningError, JobNotFoundError, type JobsController } from "../agent/scheduler.js";
 import { parsePromo, promoKey } from "../domain/promo.js";
 import type { SentStore } from "../promos/sentStore.js";
 import type { PromoPublisher } from "../telegram/publisher.js";
@@ -8,6 +9,8 @@ export interface AppDeps {
   publisher: PromoPublisher;
   sent: SentStore;
   apiKey?: string | undefined;
+  /** Agente (scheduler). Ausente = rotas /jobs respondem 503. */
+  jobs?: JobsController | undefined;
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -17,7 +20,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /** Cria a API HTTP (sem chamar listen, para facilitar testes). */
-export function createApp({ publisher, sent, apiKey }: AppDeps): express.Express {
+export function createApp({ publisher, sent, apiKey, jobs }: AppDeps): express.Express {
   const app = express();
   app.use(express.json({ limit: "100kb" }));
 
@@ -53,6 +56,35 @@ export function createApp({ publisher, sent, apiKey }: AppDeps): express.Express
     } catch (err) {
       console.error("[http] erro ao publicar promoção:", err);
       res.status(502).json({ error: "falha ao enviar a promoção para o Telegram" });
+    }
+  });
+
+  app.get("/jobs", requireApiKey, (_req, res) => {
+    if (!jobs) {
+      res.status(503).json({ error: "agente desligado (sem agent.config.json)" });
+      return;
+    }
+    res.json({ timezone: jobs.timezone, jobs: jobs.list() });
+  });
+
+  app.post("/jobs/:name/run", requireApiKey, async (req, res) => {
+    if (!jobs) {
+      res.status(503).json({ error: "agente desligado (sem agent.config.json)" });
+      return;
+    }
+    const name = String(req.params.name);
+    const dryRun = req.query.dryRun === "true";
+    try {
+      res.json(await jobs.run(name, { dryRun }));
+    } catch (err) {
+      if (err instanceof JobNotFoundError) {
+        res.status(404).json({ error: err.message });
+      } else if (err instanceof JobAlreadyRunningError) {
+        res.status(409).json({ error: err.message });
+      } else {
+        // O scheduler já loga a falha
+        res.status(500).json({ error: `falha ao executar o job: ${(err as Error).message}` });
+      }
     }
   });
 

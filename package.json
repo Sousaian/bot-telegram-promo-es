@@ -14,7 +14,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
-    "mock-backend": "tsx src/dev/mockBackend.ts"
+    "mock-backend": "tsx src/dev/mockBackend.ts",
+    "agent": "tsx --env-file-if-exists=.env src/cli/runJob.ts"
   },
   "author": "Ian Alves Sousa",
   "license": "UNLICENSED",

@@ -59,16 +59,35 @@ export class AmazonSource implements OfferSource {
   readonly id = "amazon" as const;
   private lastRequest = 0;
 
-  constructor(private readonly minIntervalMs = 3_000) {}
+  constructor(
+    private readonly minIntervalMs = 3_000,
+    private readonly maxAttempts = 3,
+  ) {}
 
-  async search(keyword: string, limit: number): Promise<Offer[]> {
+  private async throttle(): Promise<void> {
     const wait = this.lastRequest + this.minIntervalMs - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     this.lastRequest = Date.now();
+  }
 
+  async search(keyword: string, limit: number): Promise<Offer[]> {
     const url = `${BASE}/s?k=${encodeURIComponent(keyword)}`;
-    const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20_000) });
-    if (!res.ok) throw new Error(`Amazon respondeu ${res.status}`);
-    return parseAmazonSearch(await res.text(), keyword).slice(0, limit);
+    let lastError: Error | undefined;
+
+    // A Amazon devolve 503 / captcha de forma intermitente: tenta de novo com backoff.
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
+      await this.throttle();
+      try {
+        const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20_000) });
+        if (res.status === 503 || res.status === 429) throw new CaptchaError(`Amazon respondeu ${res.status}`);
+        if (!res.ok) throw new Error(`Amazon respondeu ${res.status}`);
+        return parseAmazonSearch(await res.text(), keyword).slice(0, limit);
+      } catch (err) {
+        lastError = err as Error;
+        if (!(err instanceof CaptchaError) || attempt === this.maxAttempts) break;
+        await new Promise((r) => setTimeout(r, 2_000 * 2 ** (attempt - 1)));
+      }
+    }
+    throw lastError ?? new Error("Amazon: falha desconhecida");
   }
 }
