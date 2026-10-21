@@ -1,0 +1,31 @@
+{
+  "name": "bot-telegram-promocoes",
+  "version": "2.0.0",
+  "description": "Bot do Telegram que publica promoções (com link de afiliado) em um grupo, a partir de um backend ou de uma API HTTP.",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "mock-backend": "tsx src/dev/mockBackend.ts"
+  },
+  "author": "Ian Alves Sousa",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^5.1.0",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3"
+  }
+}
