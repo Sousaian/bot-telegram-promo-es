@@ -18,7 +18,7 @@
     "agent": "tsx --env-file-if-exists=.env src/cli/runJob.ts"
   },
   "author": "Ian Alves Sousa",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": {
     "croner": "^10.0.1",
     "express": "^5.1.0",
